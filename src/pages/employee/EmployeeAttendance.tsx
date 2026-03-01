@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, LogIn, LogOut, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
@@ -44,14 +43,8 @@ export default function EmployeeAttendance() {
   }, []);
 
   const handlePunchIn = () => {
-    if (!location) {
-      toast({ title: 'Location required', description: 'Please enable GPS', variant: 'destructive' });
-      return;
-    }
-    if (!isInRange) {
-      toast({ title: 'Out of range', description: 'You must be within office premises to punch in', variant: 'destructive' });
-      return;
-    }
+    if (!location) { toast({ title: 'Location required', description: 'Please enable GPS', variant: 'destructive' }); return; }
+    if (!isInRange) { toast({ title: 'Out of range', description: 'You must be within office premises to punch in', variant: 'destructive' }); return; }
     setLoading(true);
     setTimeout(() => {
       const success = punchIn(currentUser!.id, location);
@@ -73,16 +66,16 @@ export default function EmployeeAttendance() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="page-header">Attendance</h1>
-        <p className="text-muted-foreground mt-1">Mark your daily attendance with GPS verification</p>
+      <div className="mb-4 md:mb-6">
+        <h1 className="page-header text-xl md:text-2xl">Attendance</h1>
+        <p className="text-muted-foreground text-sm mt-1">Mark your daily attendance with GPS verification</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
         {/* Punch Card */}
         <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
               <MapPin className="w-5 h-5 text-accent" />
               Punch Attendance
             </CardTitle>
@@ -99,9 +92,7 @@ export default function EmployeeAttendance() {
                 <div>
                   <p className="font-medium">{isInRange ? 'Within office range' : 'Outside office range'}</p>
                   <p className="text-xs opacity-70 mt-0.5">
-                    {isInRange
-                      ? 'You can mark your attendance'
-                      : `You need to be within ${ALLOWED_RADIUS_METERS}m of office`}
+                    {isInRange ? 'You can mark your attendance' : `You need to be within ${ALLOWED_RADIUS_METERS}m of office`}
                   </p>
                 </div>
               </div>
@@ -109,9 +100,9 @@ export default function EmployeeAttendance() {
               <p className="text-sm text-muted-foreground">Fetching location...</p>
             )}
 
-            <div className="text-center py-4">
-              <p className="text-4xl font-bold">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
-              <p className="text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <div className="text-center py-3">
+              <p className="text-3xl md:text-4xl font-bold">{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-xs md:text-sm text-muted-foreground mt-1">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
 
             {todayRecord ? (
@@ -138,33 +129,25 @@ export default function EmployeeAttendance() {
         {/* History */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg">Attendance History</CardTitle>
+            <CardTitle className="text-base md:text-lg">Attendance History</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>In Time</TableHead>
-                  <TableHead>Out Time</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {myAttendance.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-medium">{a.date}</TableCell>
-                    <TableCell className="text-success">{a.inTime}</TableCell>
-                    <TableCell className="text-muted-foreground">{a.outTime || 'Working...'}</TableCell>
-                    <TableCell>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
-                        {a.status}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <CardContent className="space-y-3">
+            {myAttendance.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No attendance records yet</p>}
+            {myAttendance.map((a) => (
+              <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                <div>
+                  <p className="text-sm font-medium">{a.date}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    In: <span className="text-success font-medium">{a.inTime}</span>
+                    {a.outTime && <> · Out: <span className="font-medium">{a.outTime}</span></>}
+                    {!a.outTime && <span className="text-accent"> · Working...</span>}
+                  </p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
+                  {a.status}
+                </span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
