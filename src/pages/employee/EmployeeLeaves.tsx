@@ -9,15 +9,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 
 export default function EmployeeLeaves() {
   const { currentUser, leaves, addLeave } = useAppStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ type: '' as any, startDate: '', endDate: '', reason: '' });
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
-  const myLeaves = leaves.filter((l) => l.employeeId === currentUser?.id).sort((a, b) => b.appliedOn.localeCompare(a.appliedOn));
+  const myLeaves = leaves
+    .filter((l) => l.employeeId === currentUser?.id)
+    .filter((l) => {
+      const matchesSearch = !search ||
+        l.reason.toLowerCase().includes(search.toLowerCase()) ||
+        l.startDate.includes(search) ||
+        l.endDate.includes(search);
+      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
+      const matchesType = typeFilter === 'all' || l.type === typeFilter;
+      return matchesSearch && matchesStatus && matchesType;
+    })
+    .sort((a, b) => b.appliedOn.localeCompare(a.appliedOn));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +95,41 @@ export default function EmployeeLeaves() {
         </Dialog>
       </div>
 
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search by reason or date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="casual">Casual</SelectItem>
+              <SelectItem value="sick">Sick</SelectItem>
+              <SelectItem value="earned">Earned</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="space-y-3">
         {myLeaves.length === 0 && (
-          <Card><CardContent className="text-center text-muted-foreground py-8">No leave requests yet</CardContent></Card>
+          <Card><CardContent className="text-center text-muted-foreground py-8 text-sm">No leave requests found</CardContent></Card>
         )}
         {myLeaves.map((l) => (
           <Card key={l.id}>

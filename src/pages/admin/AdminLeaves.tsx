@@ -1,14 +1,33 @@
+import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Check, X } from 'lucide-react';
+import { Check, X, Search, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminLeaves() {
   const { leaves, employees, updateLeaveStatus } = useAppStore();
   const { toast } = useToast();
-  const sorted = [...leaves].sort((a, b) => (a.status === 'pending' ? -1 : 1));
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const filtered = leaves
+    .filter((l) => {
+      const emp = employees.find((e) => e.id === l.employeeId);
+      const matchesSearch = !search ||
+        emp?.name.toLowerCase().includes(search.toLowerCase()) ||
+        l.reason.toLowerCase().includes(search.toLowerCase()) ||
+        l.startDate.includes(search) ||
+        l.endDate.includes(search);
+      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
+      const matchesType = typeFilter === 'all' || l.type === typeFilter;
+      return matchesSearch && matchesStatus && matchesType;
+    })
+    .sort((a, b) => (a.status === 'pending' ? -1 : 1));
 
   return (
     <DashboardLayout>
@@ -17,8 +36,43 @@ export default function AdminLeaves() {
         <p className="text-muted-foreground text-sm mt-1">Review and approve leave requests</p>
       </div>
 
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search by employee, reason, date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="casual">Casual</SelectItem>
+              <SelectItem value="sick">Sick</SelectItem>
+              <SelectItem value="earned">Earned</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {sorted.map((l) => {
+        {filtered.length === 0 && (
+          <Card><CardContent className="text-center text-muted-foreground py-8 text-sm">No leave requests found</CardContent></Card>
+        )}
+        {filtered.map((l) => {
           const emp = employees.find((e) => e.id === l.employeeId);
           return (
             <Card key={l.id}>
