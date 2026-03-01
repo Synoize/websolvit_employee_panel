@@ -13,25 +13,25 @@ export default function EmployeeDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="page-header">Hello, {currentUser?.name} 👋</h1>
-        <p className="text-muted-foreground mt-1">Here's your overview for today</p>
+      <div className="mb-6">
+        <h1 className="page-header text-xl md:text-2xl">Hello, {currentUser?.name} 👋</h1>
+        <p className="text-muted-foreground text-sm mt-1">Here's your overview for today</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-        <Card className="stat-card">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card className="stat-card !p-4 md:!p-6">
           <CardContent className="p-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-accent">
-                <Clock className="w-6 h-6" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-muted flex items-center justify-center text-accent shrink-0">
+                <Clock className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Status</p>
-                <p className="text-lg font-bold">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Today's Status</p>
+                <p className="text-base md:text-lg font-bold truncate">
                   {todayRecord ? (todayRecord.outTime ? 'Completed' : 'Punched In') : 'Not Punched'}
                 </p>
                 {todayRecord && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground truncate">
                     In: {todayRecord.inTime} {todayRecord.outTime && `| Out: ${todayRecord.outTime}`}
                   </p>
                 )}
@@ -40,15 +40,15 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="stat-card">
+        <Card className="stat-card !p-4 md:!p-6">
           <CardContent className="p-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-warning">
-                <Wallet className="w-6 h-6" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-muted flex items-center justify-center text-warning shrink-0">
+                <Wallet className="w-5 h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Pending Expenses</p>
-                <p className="text-lg font-bold">{myExpenses.filter((e) => e.status === 'pending').length}</p>
+                <p className="text-xs text-muted-foreground">Pending Expenses</p>
+                <p className="text-base md:text-lg font-bold">{myExpenses.filter((e) => e.status === 'pending').length}</p>
                 <p className="text-xs text-muted-foreground">
                   Total: ₹{myExpenses.reduce((s, e) => s + e.amount, 0).toLocaleString()}
                 </p>
@@ -57,15 +57,15 @@ export default function EmployeeDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="stat-card">
+        <Card className="stat-card !p-4 md:!p-6">
           <CardContent className="p-0">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-destructive">
-                <CalendarDays className="w-6 h-6" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-muted flex items-center justify-center text-destructive shrink-0">
+                <CalendarDays className="w-5 h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Leave Balance</p>
-                <p className="text-lg font-bold">{myLeaves.filter((l) => l.status === 'approved').length} taken</p>
+                <p className="text-xs text-muted-foreground">Leave Balance</p>
+                <p className="text-base md:text-lg font-bold">{myLeaves.filter((l) => l.status === 'approved').length} taken</p>
                 <p className="text-xs text-muted-foreground">{myLeaves.filter((l) => l.status === 'pending').length} pending</p>
               </div>
             </div>
@@ -74,21 +74,24 @@ export default function EmployeeDashboard() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Attendance</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">Recent Attendance</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {myAttendance.slice(-7).reverse().map((a) => (
-              <div key={a.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <p className="text-sm font-medium">{a.date}</p>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-success">{a.inTime}</span>
-                  <span className="text-muted-foreground">{a.outTime || 'Working...'}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
-                    {a.status}
-                  </span>
+              <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                <div>
+                  <p className="text-sm font-medium">{a.date}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    In: <span className="text-success">{a.inTime}</span>
+                    {a.outTime && <> · Out: {a.outTime}</>}
+                    {!a.outTime && <span className="text-accent"> · Working...</span>}
+                  </p>
                 </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
+                  {a.status}
+                </span>
               </div>
             ))}
           </div>

@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAppStore } from '@/store/useAppStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 
@@ -41,23 +40,23 @@ export default function EmployeeExpenses() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
         <div>
-          <h1 className="page-header">Expenses</h1>
-          <p className="text-muted-foreground mt-1">Submit and track your expenses</p>
+          <h1 className="page-header text-xl md:text-2xl">Expenses</h1>
+          <p className="text-muted-foreground text-sm mt-1">Submit and track your expenses</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" />New Expense</Button>
+            <Button size="sm" className="md:size-default"><Plus className="w-4 h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">New </span>Expense</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
             <DialogHeader><DialogTitle>Submit Expense</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="space-y-2">
                 <Label>Title *</Label>
                 <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Client dinner" required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Amount (₹) *</Label>
                   <Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
@@ -84,39 +83,29 @@ export default function EmployeeExpenses() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myExpenses.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="font-medium">{e.title}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.category}</TableCell>
-                  <TableCell className="font-semibold">₹{e.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.date}</TableCell>
-                  <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${e.status === 'approved' ? 'badge-approved' : e.status === 'rejected' ? 'badge-rejected' : 'badge-pending'}`}>
-                      {e.status}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {myExpenses.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No expenses yet</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        {myExpenses.length === 0 && (
+          <Card><CardContent className="text-center text-muted-foreground py-8">No expenses yet</CardContent></Card>
+        )}
+        {myExpenses.map((e) => (
+          <Card key={e.id} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{e.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{e.category} · {e.date}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold">₹{e.amount.toLocaleString()}</p>
+                  <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full border font-medium ${e.status === 'approved' ? 'badge-approved' : e.status === 'rejected' ? 'badge-rejected' : 'badge-pending'}`}>
+                    {e.status}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </DashboardLayout>
   );
 }

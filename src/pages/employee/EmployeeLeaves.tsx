@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 
@@ -38,16 +37,16 @@ export default function EmployeeLeaves() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
         <div>
-          <h1 className="page-header">Leave Requests</h1>
-          <p className="text-muted-foreground mt-1">Apply and track your leaves</p>
+          <h1 className="page-header text-xl md:text-2xl">Leave Requests</h1>
+          <p className="text-muted-foreground text-sm mt-1">Apply and track your leaves</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" />Apply Leave</Button>
+            <Button size="sm" className="md:size-default"><Plus className="w-4 h-4 mr-1 md:mr-2" /><span className="hidden sm:inline">Apply </span>Leave</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
             <DialogHeader><DialogTitle>Apply for Leave</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="space-y-2">
@@ -62,13 +61,13 @@ export default function EmployeeLeaves() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>From Date *</Label>
+                  <Label>From *</Label>
                   <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>To Date *</Label>
+                  <Label>To *</Label>
                   <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
                 </div>
               </div>
@@ -82,41 +81,27 @@ export default function EmployeeLeaves() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Applied On</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {myLeaves.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="capitalize font-medium">{l.type}</TableCell>
-                  <TableCell>{l.startDate}</TableCell>
-                  <TableCell>{l.endDate}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">{l.reason}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.appliedOn}</TableCell>
-                  <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${l.status === 'approved' ? 'badge-approved' : l.status === 'rejected' ? 'badge-rejected' : 'badge-pending'}`}>
-                      {l.status}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {myLeaves.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No leave requests yet</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        {myLeaves.length === 0 && (
+          <Card><CardContent className="text-center text-muted-foreground py-8">No leave requests yet</CardContent></Card>
+        )}
+        {myLeaves.map((l) => (
+          <Card key={l.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold capitalize">{l.type} Leave</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{l.startDate} → {l.endDate}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.reason}</p>
+                </div>
+                <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border font-medium ${l.status === 'approved' ? 'badge-approved' : l.status === 'rejected' ? 'badge-rejected' : 'badge-pending'}`}>
+                  {l.status}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </DashboardLayout>
   );
 }
