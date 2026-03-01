@@ -9,15 +9,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, Search, Filter } from 'lucide-react';
 
 export default function EmployeeExpenses() {
   const { currentUser, expenses, addExpense } = useAppStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', amount: '', category: '', description: '' });
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const myExpenses = expenses.filter((e) => e.employeeId === currentUser?.id).sort((a, b) => b.date.localeCompare(a.date));
+  const myExpenses = expenses
+    .filter((e) => e.employeeId === currentUser?.id)
+    .filter((e) => {
+      const matchesSearch = !search ||
+        e.title.toLowerCase().includes(search.toLowerCase()) ||
+        e.category.toLowerCase().includes(search.toLowerCase()) ||
+        e.date.includes(search);
+      const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +95,29 @@ export default function EmployeeExpenses() {
         </Dialog>
       </div>
 
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search by title, category, date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="space-y-3">
         {myExpenses.length === 0 && (
-          <Card><CardContent className="text-center text-muted-foreground py-8">No expenses yet</CardContent></Card>
+          <Card><CardContent className="text-center text-muted-foreground py-8 text-sm">No expenses found</CardContent></Card>
         )}
         {myExpenses.map((e) => (
           <Card key={e.id} className="overflow-hidden">

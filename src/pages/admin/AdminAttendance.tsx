@@ -3,21 +3,25 @@ import { useAppStore } from '@/store/useAppStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminAttendance() {
   const { attendance, employees } = useAppStore();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const sorted = [...attendance].sort((a, b) => b.date.localeCompare(a.date));
-  const filtered = sorted.filter((a) => {
-    const emp = employees.find((e) => e.id === a.employeeId);
-    return (
-      emp?.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.employeeId.toLowerCase().includes(search.toLowerCase()) ||
-      a.date.includes(search)
-    );
-  });
+  const filtered = attendance
+    .filter((a) => {
+      const emp = employees.find((e) => e.id === a.employeeId);
+      const matchesSearch = !search ||
+        emp?.name.toLowerCase().includes(search.toLowerCase()) ||
+        a.employeeId.toLowerCase().includes(search.toLowerCase()) ||
+        a.date.includes(search);
+      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <DashboardLayout>
@@ -26,12 +30,30 @@ export default function AdminAttendance() {
         <p className="text-muted-foreground text-sm mt-1">All employee attendance history</p>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input className="pl-9" placeholder="Search by name, ID, or date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search by name, ID, or date..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="present">Present</SelectItem>
+              <SelectItem value="absent">Absent</SelectItem>
+              <SelectItem value="leave">Leave</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-3">
+        {filtered.length === 0 && (
+          <Card><CardContent className="text-center text-muted-foreground py-8 text-sm">No records found</CardContent></Card>
+        )}
         {filtered.map((a) => {
           const emp = employees.find((e) => e.id === a.employeeId);
           return (

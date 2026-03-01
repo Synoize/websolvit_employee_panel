@@ -3,8 +3,10 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAppStore, COMPANY_LOCATION, ALLOWED_RADIUS_METERS } from '@/store/useAppStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, LogIn, LogOut, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { MapPin, LogIn, LogOut, AlertTriangle, CheckCircle2, Search, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function getDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371000;
@@ -22,10 +24,19 @@ export default function EmployeeAttendance() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const today = new Date().toISOString().split('T')[0];
   const todayRecord = attendance.find((a) => a.employeeId === currentUser?.id && a.date === today);
-  const myAttendance = attendance.filter((a) => a.employeeId === currentUser?.id).sort((a, b) => b.date.localeCompare(a.date));
+  const myAttendance = attendance
+    .filter((a) => a.employeeId === currentUser?.id)
+    .filter((a) => {
+      const matchesSearch = !search || a.date.includes(search);
+      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const isInRange = location
     ? getDistance(location.lat, location.lng, COMPANY_LOCATION.lat, COMPANY_LOCATION.lng) <= ALLOWED_RADIUS_METERS
@@ -128,26 +139,48 @@ export default function EmployeeAttendance() {
 
         {/* History */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base md:text-lg">Attendance History</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {myAttendance.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No attendance records yet</p>}
-            {myAttendance.map((a) => (
-              <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div>
-                  <p className="text-sm font-medium">{a.date}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    In: <span className="text-success font-medium">{a.inTime}</span>
-                    {a.outTime && <> · Out: <span className="font-medium">{a.outTime}</span></>}
-                    {!a.outTime && <span className="text-accent"> · Working...</span>}
-                  </p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
-                  {a.status}
-                </span>
+          <CardContent>
+            <div className="space-y-3 mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Search by date..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-            ))}
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs">
+                    <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                    <SelectItem value="leave">Leave</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {myAttendance.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No records found</p>}
+              {myAttendance.map((a) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+                  <div>
+                    <p className="text-sm font-medium">{a.date}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      In: <span className="text-success font-medium">{a.inTime}</span>
+                      {a.outTime && <> · Out: <span className="font-medium">{a.outTime}</span></>}
+                      {!a.outTime && <span className="text-accent"> · Working...</span>}
+                    </p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${a.status === 'present' ? 'badge-approved' : 'badge-pending'}`}>
+                    {a.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

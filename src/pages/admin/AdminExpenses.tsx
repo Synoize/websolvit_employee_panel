@@ -1,14 +1,35 @@
+import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Check, X } from 'lucide-react';
+import { Check, X, Search, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminExpenses() {
   const { expenses, employees, updateExpenseStatus } = useAppStore();
   const { toast } = useToast();
-  const sorted = [...expenses].sort((a, b) => (a.status === 'pending' ? -1 : 1));
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  const categories = [...new Set(expenses.map(e => e.category))];
+
+  const filtered = expenses
+    .filter((e) => {
+      const emp = employees.find((em) => em.id === e.employeeId);
+      const matchesSearch = !search || 
+        e.title.toLowerCase().includes(search.toLowerCase()) ||
+        emp?.name.toLowerCase().includes(search.toLowerCase()) ||
+        e.category.toLowerCase().includes(search.toLowerCase()) ||
+        e.date.includes(search);
+      const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || e.category === categoryFilter;
+      return matchesSearch && matchesStatus && matchesCategory;
+    })
+    .sort((a, b) => (a.status === 'pending' ? -1 : 1));
 
   return (
     <DashboardLayout>
@@ -17,8 +38,40 @@ export default function AdminExpenses() {
         <p className="text-muted-foreground text-sm mt-1">Review and approve employee expenses</p>
       </div>
 
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9" placeholder="Search by title, employee, category..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs">
+              <Filter className="w-3 h-3 mr-1.5" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {sorted.map((e) => {
+        {filtered.length === 0 && (
+          <Card><CardContent className="text-center text-muted-foreground py-8 text-sm">No expenses found</CardContent></Card>
+        )}
+        {filtered.map((e) => {
           const emp = employees.find((em) => em.id === e.employeeId);
           return (
             <Card key={e.id}>
