@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 // JWT Utilities
 const TOKEN_KEY = 'auth_token';
@@ -51,7 +51,6 @@ const setToken = (token, refreshToken) => {
 };
 
 const getToken = () => localStorage.getItem(TOKEN_KEY);
-const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
 const clearTokens = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);

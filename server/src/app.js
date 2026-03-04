@@ -17,9 +17,13 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '';
-const parsedOrigins = CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
-const allowedOrigins = new Set(parsedOrigins);
+const parseOrigins = (value = '') =>
+  value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const allowedOrigins = new Set(parseOrigins(process.env.CORS_ORIGIN || ''));
 
 const FRONTEND_URL = String(process.env.FRONTEND_URL || '').trim();
 if (FRONTEND_URL) allowedOrigins.add(FRONTEND_URL);
@@ -28,14 +32,9 @@ const CORS_CREDENTIALS = String(process.env.CORS_CREDENTIALS || 'false').toLower
 
 const corsOptions = {
   origin(origin, callback) {
-    // Allow non-browser clients / server-to-server
     if (!origin) return callback(null, true);
-
-    // Wildcard override
     if (allowedOrigins.has('*')) return callback(null, true);
-
     if (allowedOrigins.has(origin)) return callback(null, true);
-
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: CORS_CREDENTIALS,
@@ -47,7 +46,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Ensure DB connection before hitting route handlers (important for serverless cold starts).
 app.use(async (_req, res, next) => {
   try {
     if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
@@ -65,22 +63,15 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/leaves', leaveRoutes);
 
-app.get('/', (_req, res) => {
+app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Return CORS errors as JSON responses.
 app.use((err, _req, res, _next) => {
   if (err && String(err.message || '').startsWith('CORS blocked')) {
     return res.status(403).json({ message: err.message });
   }
   return res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
-
-// Local server mode
-if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-}
 
 export default app;

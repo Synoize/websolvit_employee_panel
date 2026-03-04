@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Backend API for employee_panel using MongoDB Atlas",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
