@@ -3,17 +3,28 @@ import { Employee } from '../models/Employee.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '').trim();
 
 // login endpoint
 router.post('/login', async (req, res) => {
   const { id, password } = req.body;
   try {
-    // special built-in admin
-    if (id === 'admin' && password === 'admin123') {
-      const token = jwt.sign({ userId: 'admin', role: 'admin', userName: 'Admin' }, process.env.JWT_SECRET || 'secret', {
+    const normalizedId = String(id || '').trim().toLowerCase();
+    const normalizedPassword = String(password || '').trim();
+    const isAdminId = normalizedId === ADMIN_USERNAME || (ADMIN_EMAIL && normalizedId === ADMIN_EMAIL);
+
+    // admin login from environment configuration
+    if (isAdminId && ADMIN_PASSWORD && normalizedPassword === ADMIN_PASSWORD) {
+      const token = jwt.sign({ userId: 'admin', role: 'admin', userName: 'Admin' }, JWT_SECRET, {
         expiresIn: '1h',
       });
       return res.json({ user: { _id: 'admin', role: 'admin', name: 'Admin' }, token });
+    }
+    if (isAdminId) {
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Try to find employee by custom ID (EMP001) or MongoDB ObjectId
@@ -28,7 +39,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     // create JWT
-    const token = jwt.sign({ userId: emp._id, role: emp.role, userName: emp.name }, process.env.JWT_SECRET || 'secret', {
+    const token = jwt.sign({ userId: emp._id, role: emp.role, userName: emp.name }, JWT_SECRET, {
       expiresIn: '1h',
     });
     res.json({ user: emp, token });
