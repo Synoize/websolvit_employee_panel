@@ -13,10 +13,8 @@ import {
   UserCircle2,
   Building2,
   Menu,
-  X,
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { assets } from '../../assets/assets';
 
 const adminLinks = [
@@ -87,7 +85,7 @@ export default function DashboardLayout({ children }) {
       </aside >
 
       {/* Mobile Top Bar */}
-      <div div className="flex flex-col flex-1 min-w-0" >
+      <div className="flex flex-col flex-1 min-w-0" >
         <header className="md:hidden flex items-center justify-between px-4 py-5 h-16 bg-sidebar border-b border-sidebar-border shrink-0 safe-top">
           <div className="flex items-center gap-2">
             <img src={assets.logo_square} alt="websolvit" className='h-10' />
@@ -97,6 +95,10 @@ export default function DashboardLayout({ children }) {
                 <Menu className="w-7 h-7 text-sidebar-foreground hover:bg-sidebar-accent" />
             </SheetTrigger>
             <SheetContent side="right" className="w-72 bg-sidebar border-sidebar-border p-0">
+              <SheetTitle className="sr-only">Mobile navigation</SheetTitle>
+              <SheetDescription className="sr-only">
+                Open menu for navigation links and account actions.
+              </SheetDescription>
               <div className="p-5 border-b border-sidebar-border">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">

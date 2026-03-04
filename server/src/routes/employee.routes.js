@@ -3,22 +3,24 @@ import { Employee } from '../models/Employee.js';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || '').trim().toLowerCase();
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '').trim();
 
 // login endpoint
 router.post('/login', async (req, res) => {
   const { id, password } = req.body;
   try {
+    const jwtSecret = process.env.JWT_SECRET;
+    const adminUsername = String(process.env.ADMIN_USERNAME || '').trim().toLowerCase();
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim();
+
+    const rawId = String(id || '').trim();
     const normalizedId = String(id || '').trim().toLowerCase();
     const normalizedPassword = String(password || '').trim();
-    const isAdminId = normalizedId === ADMIN_USERNAME || (ADMIN_EMAIL && normalizedId === ADMIN_EMAIL);
+    const isAdminId = normalizedId === adminUsername || (adminEmail && normalizedId === adminEmail);
 
     // admin login from environment configuration
-    if (isAdminId && ADMIN_PASSWORD && normalizedPassword === ADMIN_PASSWORD) {
-      const token = jwt.sign({ userId: 'admin', role: 'admin', userName: 'Admin' }, JWT_SECRET, {
+    if (isAdminId && adminPassword && normalizedPassword === adminPassword) {
+      const token = jwt.sign({ userId: 'admin', role: 'admin', userName: 'Admin' }, jwtSecret, {
         expiresIn: '1h',
       });
       return res.json({ user: { _id: 'admin', role: 'admin', name: 'Admin' }, token });
@@ -28,18 +30,18 @@ router.post('/login', async (req, res) => {
     }
 
     // Try to find employee by custom ID (EMP001) or MongoDB ObjectId
-    let emp = await Employee.findOne({ _id: id });
+    let emp = await Employee.findOne({ _id: rawId });
     
     // If not found by _id, try by email
     if (!emp) {
-      emp = await Employee.findOne({ email: id });
+      emp = await Employee.findOne({ email: rawId });
     }
     
     if (!emp || emp.password !== password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     // create JWT
-    const token = jwt.sign({ userId: emp._id, role: emp.role, userName: emp.name }, JWT_SECRET, {
+    const token = jwt.sign({ userId: emp._id, role: emp.role, userName: emp.name }, jwtSecret, {
       expiresIn: '1h',
     });
     res.json({ user: emp, token });
@@ -64,6 +66,28 @@ router.post('/', async (req, res) => {
     }
     await emp.save();
     res.json(emp);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    delete updates._id;
+    const emp = await Employee.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+    if (!emp) return res.status(404).json({ message: 'Not found' });
+    res.json(emp);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const emp = await Employee.findByIdAndDelete(req.params.id);
+    if (!emp) return res.status(404).json({ message: 'Not found' });
+    res.status(204).send();
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

@@ -109,13 +109,13 @@ const api = {
 };
 
 // Admin Login Config
-const ADMIN_USERNAME = (import.meta.env.VITE_ADMIN_USERNAME).trim().toLowerCase();
-const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL).trim().toLowerCase();
-const ADMIN_PASSWORD = String(import.meta.env.VITE_ADMIN_PASSWORD).trim();
+const ADMIN_USERNAME = String(import.meta.env.VITE_ADMIN_USERNAME || '').trim().toLowerCase();
+const ADMIN_EMAIL = String(import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase();
+const ADMIN_PASSWORD = String(import.meta.env.VITE_ADMIN_PASSWORD || '').trim();
 
 // Constants
-export const COMPANY_LOCATION = { lat: Number(import.meta.env.VITE_COMPANY_LAT), lng: Number(import.meta.env.VITE_COMPANY_LNG) };
-export const ALLOWED_RADIUS_METERS = Number(import.meta.env.VITE_COMPANY_RADIUS_METERS);
+export const COMPANY_LOCATION = { lat: Number(import.meta.env.VITE_COMPANY_LAT || 21.0874133), lng: Number(import.meta.env.VITE_COMPANY_LNG || 79.0940333) };
+export const ALLOWED_RADIUS_METERS = Number(import.meta.env.VITE_COMPANY_RADIUS_METERS || 200);
 
 // Helpers
 const today = () => new Date().toISOString().split('T')[0];

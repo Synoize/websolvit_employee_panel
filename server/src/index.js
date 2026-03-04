@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import connectDB from './config/database.js';
 import employeeRoutes from './routes/employee.routes.js';
@@ -8,8 +9,10 @@ import attendanceRoutes from './routes/attendance.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import leaveRoutes from './routes/leave.routes.js';
 
-// load variables from server's own .env file
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Load variables from server/.env no matter where node is started from.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'ADMIN_USERNAME', 'ADMIN_PASSWORD'];
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key] || !String(process.env[key]).trim());
