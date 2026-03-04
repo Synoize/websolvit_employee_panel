@@ -134,7 +134,7 @@ export default function EmployeeProfileView({ employeeId, isAdminView = false })
                 <Input className="pl-9" value={expenseSearch} onChange={(e) => setExpenseSearch(e.target.value)} placeholder="Search expenses..." />
               </div>
               <div className="flex gap-2">
-                <Input type="date" className="h-9 text-sm" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+                <Input type="date" className="w-auto h-9 text-sm" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
                 <Select value={expenseStatus} onValueChange={setExpenseStatus}>
                   <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -171,7 +171,7 @@ export default function EmployeeProfileView({ employeeId, isAdminView = false })
                 <Input className="pl-9" value={leaveSearch} onChange={(e) => setLeaveSearch(e.target.value)} placeholder="Search leaves..." />
               </div>
               <div className="flex gap-2">
-                <Input type="date" className="h-9 text-sm" value={leaveDate} onChange={(e) => setLeaveDate(e.target.value)} />
+                <Input type="date" className="w-auto h-9 text-sm" value={leaveDate} onChange={(e) => setLeaveDate(e.target.value)} />
                 <Select value={leaveStatus} onValueChange={setLeaveStatus}>
                   <SelectTrigger className="w-[110px] h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -218,7 +218,7 @@ export default function EmployeeProfileView({ employeeId, isAdminView = false })
                 <Input className="pl-9" value={attendanceSearch} onChange={(e) => setAttendanceSearch(e.target.value)} placeholder="Search attendance..." />
               </div>
               <div className="flex gap-2">
-                <Input type="date" className="h-9 text-sm" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} />
+                <Input type="date" className="w-auto h-9 text-sm" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} />
                 <Select value={attendanceStatus} onValueChange={setAttendanceStatus}>
                   <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>

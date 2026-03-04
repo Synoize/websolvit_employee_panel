@@ -1,33 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 
-// JWT Utilities
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
-const SECRET_KEY = import.meta.env.VITE_JWT_SECRET || 'your-secret-key-change-in-production';
-
-const generateToken = (userId, role, userName) => {
-  const now = Math.floor(Date.now() / 1000);
-  const expiresIn = 60 * 60;
-
-  const payload = { userId, role, userName, iat: now, exp: now + expiresIn };
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = btoa(JSON.stringify(payload));
-  const signature = btoa(SECRET_KEY);
-
-  return `${header}.${body}.${signature}`;
-};
-
-const generateRefreshToken = (userId) => {
-  const now = Math.floor(Date.now() / 1000);
-  const expiresIn = 7 * 24 * 60 * 60; // 7 days
-
-  const payload = { userId, type: 'refresh', iat: now, exp: now + expiresIn };
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = btoa(JSON.stringify(payload));
-  const signature = btoa(SECRET_KEY);
-
-  return `${header}.${body}.${signature}`;
-};
 
 const decodeToken = (token) => {
   try {
@@ -72,8 +46,10 @@ async function request(path, options = {}) {
   const url = `${BASE}${path}`;
   try {
     const hasBody = options.body !== undefined && options.body !== null;
+    const authToken = getToken();
     const headers = {
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers || {}),
     };
     const res = await fetch(url, {
@@ -95,6 +71,7 @@ async function request(path, options = {}) {
 
 const api = {
   fetchEmployees: () => request('/api/employees'),
+  fetchMyProfile: () => request('/api/employees/me'),
   createEmployee: (emp) => request('/api/employees', { method: 'POST', body: JSON.stringify(emp) }),
   login: (id, password) => request('/api/employees/login', { method: 'POST', body: JSON.stringify({ id, password }) }),
   fetchAttendance: () => request('/api/attendance'),
@@ -111,11 +88,6 @@ const api = {
   updateEmployee: (id, emp) => request(`/api/employees/${id}`, { method: 'PUT', body: JSON.stringify(emp) }),
   deleteEmployee: (id) => request(`/api/employees/${id}`, { method: 'DELETE' }),
 };
-
-// Admin Login Config
-const ADMIN_USERNAME = String(import.meta.env.VITE_ADMIN_USERNAME || '').trim().toLowerCase();
-const ADMIN_EMAIL = String(import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase();
-const ADMIN_PASSWORD = String(import.meta.env.VITE_ADMIN_PASSWORD || '').trim();
 
 // Constants
 export const COMPANY_LOCATION = { lat: Number(import.meta.env.VITE_COMPANY_LAT || 21.0874133), lng: Number(import.meta.env.VITE_COMPANY_LNG || 79.0940333) };
@@ -144,53 +116,64 @@ export const AppProvider = ({ children }) => {
   const [expenses, setExpenses] = useState([]);
   const [leaves, setLeaves] = useState([]);
 
+  const clearAppData = () => {
+    setEmployees([]);
+    setAttendance([]);
+    setExpenses([]);
+    setLeaves([]);
+  };
+
+  const loadDataForRole = async (role) => {
+    if (role === 'admin') {
+      await Promise.all([loadEmployees(), loadAttendance(), loadExpenses(), loadLeaves()]);
+      return;
+    }
+    await Promise.all([loadMyProfile(), loadAttendance(), loadExpenses(), loadLeaves()]);
+  };
+
   const initializeAuth = async () => {
     const u = getCurrentUserFromToken();
-    if (u) setCurrentUser({ id: u.userId, role: u.role, name: u.userName });
-    else setCurrentUser(null);
-    await Promise.all([loadEmployees(), loadAttendance(), loadExpenses(), loadLeaves()]);
+    if (u) {
+      const user = { id: u.userId, role: u.role, name: u.userName };
+      setCurrentUser(user);
+      await loadDataForRole(user.role);
+    } else {
+      setCurrentUser(null);
+      clearAppData();
+    }
     setIsInitializing(false);
   };
 
   const login = async (id, password) => {
-    const normalizedId = String(id || '').trim().toLowerCase();
-    const normalizedPassword = String(password || '').trim();
-    const isAdminId = normalizedId === ADMIN_USERNAME || (ADMIN_EMAIL && normalizedId === ADMIN_EMAIL);
-    if (isAdminId && normalizedPassword === ADMIN_PASSWORD) {
-      const token = generateToken('admin', 'admin', 'Admin');
-      const refreshToken = generateRefreshToken('admin');
-      setToken(token, refreshToken);
-      const adminUser = { id: 'admin', role: 'admin', name: 'Admin' };
-      setCurrentUser(adminUser);
-      return adminUser;
-    }
-    if (isAdminId) {
-      return null;
-    }
-
     try {
       const resp = await api.login(id, password);
       if (resp && resp.user) {
-        if (resp.user.role === 'admin') {
-          return null;
-        }
         if (resp.token) setToken(resp.token, '');
         const u = resp.user;
         const nextUser = { id: u._id || u.id, role: u.role, name: u.name };
         setCurrentUser(nextUser);
+        await loadDataForRole(nextUser.role);
         return nextUser;
       }
     } catch (err) { console.error('login error', err); }
     return null;
   };
 
-  const logout = () => { clearTokens(); setCurrentUser(null); };
+  const logout = () => { clearTokens(); setCurrentUser(null); clearAppData(); };
 
   const loadEmployees = async () => {
     try {
       const emps = await api.fetchEmployees();
       setEmployees(emps.map((e) => ({ ...e, id: e._id })));
     } catch (err) { console.error('loadEmployees error', err); }
+  };
+
+  const loadMyProfile = async () => {
+    try {
+      const me = await api.fetchMyProfile();
+      if (!me) return;
+      setEmployees([{ ...me, id: me._id }]);
+    } catch (err) { console.error('loadMyProfile error', err); }
   };
 
   const loadAttendance = async () => {
@@ -278,7 +261,7 @@ export const AppProvider = ({ children }) => {
   const value = {
     currentUser, isInitializing, employees, attendance, expenses, leaves,
     login, logout, initializeAuth, setInitializing: (v) => setIsInitializing(v),
-    loadEmployees, loadAttendance, loadExpenses, loadLeaves,
+    loadEmployees, loadMyProfile, loadAttendance, loadExpenses, loadLeaves,
     addEmployee, punchIn, punchOut, addExpense, updateExpenseStatus, addLeave, updateLeaveStatus,
   };
 

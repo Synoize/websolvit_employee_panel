@@ -21,9 +21,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      console.log('Attempting login with ID:', id);
       const loggedInUser = await login(id.trim(), password);
-      console.log('Login result:', loggedInUser);
       if (loggedInUser) {
         toast({
           title: 'Login Successful',
@@ -39,7 +37,6 @@ export default function LoginPage() {
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
       toast({
         title: 'Login Error',
         description: error instanceof Error ? error.message : 'An error occurred during login',
