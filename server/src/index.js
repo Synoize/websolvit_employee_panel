@@ -9,41 +9,78 @@ import attendanceRoutes from './routes/attendance.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import leaveRoutes from './routes/leave.routes.js';
 
-// Load variables from server/.env no matter where node is started from.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Local dev: load server/.env. On Vercel, runtime env vars are injected by the platform.
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'ADMIN_USERNAME', 'ADMIN_PASSWORD'];
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key] || !String(process.env[key]).trim());
-if (missingEnvVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-  process.exit(1);
-}
-
 const app = express();
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
-const CORS_CREDENTIALS = String(process.env.CORS_CREDENTIALS || 'false').toLowerCase() === 'true';
-const allowedOrigins = CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
 
-app.use(cors({
-  origin: allowedOrigins.includes('*') ? true : allowedOrigins,
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '';
+const parsedOrigins = CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = new Set(parsedOrigins);
+
+const FRONTEND_URL = String(process.env.FRONTEND_URL || '').trim();
+if (FRONTEND_URL) allowedOrigins.add(FRONTEND_URL);
+
+const CORS_CREDENTIALS = String(process.env.CORS_CREDENTIALS || 'false').toLowerCase() === 'true';
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser clients / server-to-server
+    if (!origin) return callback(null, true);
+
+    // Wildcard override
+    if (allowedOrigins.has('*')) return callback(null, true);
+
+    if (allowedOrigins.has(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: CORS_CREDENTIALS,
-}));
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Ensure DB connection before hitting route handlers (important for serverless cold starts).
+app.use(async (_req, res, next) => {
+  try {
+    if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
+      return res.status(500).json({ message: 'Server is missing required environment variables.' });
+    }
+    await connectDB();
+    return next();
+  } catch (error) {
+    return res.status(500).json({ message: `Database connection failed: ${error.message}` });
+  }
+});
 
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/leaves', leaveRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-const PORT = process.env.PORT || 4000;
-
-connectDB().then(async () => {
-  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Return CORS errors as JSON responses.
+app.use((err, _req, res, _next) => {
+  if (err && String(err.message || '').startsWith('CORS blocked')) {
+    return res.status(403).json({ message: err.message });
+  }
+  return res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
+
+// Local server mode
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
+export default app;

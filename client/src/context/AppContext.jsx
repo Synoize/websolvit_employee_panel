@@ -72,8 +72,13 @@ const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 async function request(path, options = {}) {
   const url = `${BASE}${path}`;
   try {
+    const hasBody = options.body !== undefined && options.body !== null;
+    const headers = {
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
+    };
     const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       ...options,
     });
     if (!res.ok) {

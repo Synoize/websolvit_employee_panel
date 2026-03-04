@@ -1,24 +1,29 @@
 import mongoose from 'mongoose';
 
+let cachedConnectionPromise;
+
 const connectDB = async () => {
-  try {
-    console.log('Connecting to Database...');
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // options are default in mongoose 6+
-    });
-    console.log(`Database Connected: ${conn.connection.host}`);
-
-    mongoose.connection.on('error', (err) => {
-      console.error(`Database connection error: ${err}`);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('Database disconnected.');
-    });
-  } catch (error) {
-    console.error(`Error connecting to Database: ${error.message}`);
-    process.exit(1);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
+
+  if (!cachedConnectionPromise) {
+    cachedConnectionPromise = mongoose.connect(process.env.MONGODB_URI).then((conn) => {
+      console.log(`Database Connected: ${conn.connection.host}`);
+
+      mongoose.connection.on('error', (err) => {
+        console.error(`Database connection error: ${err}`);
+      });
+
+      mongoose.connection.on('disconnected', () => {
+        console.warn('Database disconnected.');
+      });
+
+      return mongoose.connection;
+    });
+  }
+
+  return cachedConnectionPromise;
 };
 
 export default connectDB;
