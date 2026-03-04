@@ -2,7 +2,7 @@
   "name": "employee-panel-server",
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend API for employee_panel using MongoDB Atlas",
+  "description": "Backend API for employee_panel application",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

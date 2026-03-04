@@ -1,32 +1,47 @@
 import { Router } from 'express';
 import { Employee } from '../models/Employee.js';
+import { Admin } from '../models/Admin.js';
 import jwt from 'jsonwebtoken';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
+const toSafeEmployee = (emp) => ({
+  _id: emp._id,
+  name: emp.name,
+  email: emp.email,
+  department: emp.department,
+  designation: emp.designation,
+  phone: emp.phone,
+  joinDate: emp.joinDate,
+  role: emp.role,
+});
 
 // login endpoint
 router.post('/login', async (req, res) => {
   const { id, password } = req.body;
   try {
     const jwtSecret = process.env.JWT_SECRET;
-    const adminUsername = String(process.env.ADMIN_USERNAME || '').trim().toLowerCase();
-    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-    const adminPassword = String(process.env.ADMIN_PASSWORD || '').trim();
 
     const rawId = String(id || '').trim();
-    const normalizedId = String(id || '').trim().toLowerCase();
     const normalizedPassword = String(password || '').trim();
-    const isAdminId = normalizedId === adminUsername || (adminEmail && normalizedId === adminEmail);
+    const normalizedId = rawId.toLowerCase();
 
-    // admin login from environment configuration
-    if (isAdminId && adminPassword && normalizedPassword === adminPassword) {
-      const token = jwt.sign({ userId: 'admin', role: 'admin', userName: 'Admin' }, jwtSecret, {
+    let admin = await Admin.findOne({ _id: rawId });
+    if (!admin) {
+      admin = await Admin.findOne({ email: normalizedId });
+    }
+
+    if (admin && admin.password === normalizedPassword) {
+      const token = jwt.sign({ userId: admin._id, role: 'admin', userName: admin.name }, jwtSecret, {
         expiresIn: '1h',
       });
-      return res.json({ user: { _id: 'admin', role: 'admin', name: 'Admin' }, token });
-    }
-    if (isAdminId) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      const safeAdmin = {
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role || 'admin',
+      };
+      return res.json({ user: safeAdmin, token });
     }
 
     // Try to find employee by custom ID (EMP001) or MongoDB ObjectId
@@ -37,26 +52,48 @@ router.post('/login', async (req, res) => {
       emp = await Employee.findOne({ email: rawId });
     }
     
-    if (!emp || emp.password !== password) {
+    if (!emp || emp.password !== normalizedPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     // create JWT
     const token = jwt.sign({ userId: emp._id, role: emp.role, userName: emp.name }, jwtSecret, {
       expiresIn: '1h',
     });
-    res.json({ user: emp, token });
+    const safeUser = toSafeEmployee(emp);
+    res.json({ user: safeUser, token });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role === 'admin') {
+      const admin = await Admin.findById(req.user.userId);
+      if (!admin) return res.status(404).json({ message: 'Admin not found' });
+      return res.json({
+        _id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: 'admin',
+      });
+    }
+
+    const emp = await Employee.findById(req.user.userId);
+    if (!emp) return res.status(404).json({ message: 'Employee not found' });
+    return res.json(toSafeEmployee(emp));
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 // CRUD
-router.get('/', async (_req, res) => {
+router.get('/', requireAuth, requireAdmin, async (_req, res) => {
   const list = await Employee.find();
   res.json(list);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   try {
     const emp = new Employee(req.body);
     // If no _id provided, generate a simple string ID (EMP + count)
@@ -71,7 +108,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const updates = { ...req.body };
     delete updates._id;
@@ -83,7 +120,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const emp = await Employee.findByIdAndDelete(req.params.id);
     if (!emp) return res.status(404).json({ message: 'Not found' });
