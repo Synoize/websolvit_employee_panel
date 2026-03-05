@@ -63,7 +63,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/leaves', leaveRoutes);
 
-app.get('/health', (_req, res) => {
+app.get('/', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
